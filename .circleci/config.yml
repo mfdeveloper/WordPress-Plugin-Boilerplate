@@ -13,11 +13,22 @@ jobs:
       # Specify service dependencies here if necessary
       # CircleCI maintains a library of pre-built images
       # documented at https://circleci.com/docs/2.0/circleci-images/
-      # - image: circleci/mysql:9.4
+      - image: mysql:5.7
+        environment:
+            MYSQL_ALLOW_EMPTY_PASSWORD: yes
+            MYSQL_ROOT_PASSWORD: ''
+            MYSQL_DATABASE: ${DB_TEST_NAME}
+            MYSQL_USER: ${DB_TEST_USER}
+            MYSQL_PASSWORD: ${DB_TEST_PASSWORD}
 
     working_directory: ~/repo
 
     steps:
+      - run:
+          name: Clone WP installation
+          working_directory: ~/app
+          command: git clone https://github.com/mfdeveloper/wordpress-docker-compose.git . && mkdir -p ./wp-content/plugins
+      
       - checkout
 
       # Download and cache dependencies
@@ -27,17 +38,29 @@ jobs:
           # fallback to using the latest cache if no exact match is found
           - v1-dependencies-
 
-      - run: cp -R -f plugin-name /app/wp-content/plugins/plugin-name
-      - run: 
-          working_directory: /app
+      - run:
+          name: Copy plugin to plugins folder
+          command: cp -R -f plugin-name ~/app/wp-content/plugins/plugin-name
+      - run:
+          name: Install dependencies
+          working_directory: ~/app
           command: composer install -n --prefer-dist
 
       - save_cache:
           paths:
             - ./vendor
-          key: v1-dependencies-{{ checksum "composer.json" }}
-        
-      # run tests!
-      - run: 
-        working_directory: /app
-        command: composer test -- --install --plugin plugin-name
+          key: v1-dependencies-{{ checksum "~/app/composer.json" }}
+
+      - run:
+          name: Wait for DB
+          # preinstalled in circleci/* docker image
+          command: >-
+            if [ -z "$DB_TEST_HOST" ]; then
+                DB_TEST_HOST=127.0.0.1:3306
+            fi
+
+            dockerize -wait tcp://$DB_TEST_HOST -timeout 120s
+      - run:
+          name: Run tests
+          working_directory: ~/app
+          command: composer test -- --install --plugin plugin-name

@@ -1,3 +1,5 @@
+[![CircleCI](https://circleci.com/gh/mfdeveloper/WordPress-Plugin-Boilerplate/tree/boilerplate-refactor.svg?style=svg)](https://circleci.com/gh/mfdeveloper/WordPress-Plugin-Boilerplate/tree/boilerplate-refactor)
+
 # WordPress Plugin Boilerplate
 
 A standardized, organized, object-oriented foundation for building high-quality WordPress Plugins.
